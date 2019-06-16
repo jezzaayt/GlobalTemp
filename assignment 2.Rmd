@@ -1,0 +1,655 @@
+---
+title: "Assignment 2"
+author: "Jeremy Aytoun"
+#date: "2 April 2019"
+output: 
+  flexdashboard::flex_dashboard:
+    verical_layout: scroll
+    theme: bootstrap
+    css: styles.css
+---
+
+
+```{r setup, include=FALSE, cache=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# speak about the gaps of the data
+# due to avg temp could be more accurate with high/low temps
+#data proprocessing etc speak about ref
+
+# Assignment 2
+#Data Science Product Development
+#installing packages used
+#install.packages("lubridate")
+#install.packages("ggplot2")
+#install.packages("gganimate")
+#install.packages("tidyverse")
+#install.packages("flexdashboard")
+#install.packages("maps")
+#install.packages("mapproj")
+#install.packages("dplyr")
+#install.packages("plotly")
+#install.packages("dygraphs")
+#install.packages("gridExtra")
+#install.packages("gifski")
+#packages used
+library("lubridate")
+library("flexdashboard")
+library("ggplot2")
+library("gganimate")
+library("tidyverse")
+library("gifski")
+library("plotly")
+library("dygraphs")
+library("RColorBrewer")
+library("grid")
+library("gridExtra")
+library("dplyr")
+
+# Dataset from Kaggle
+# https://www.kaggle.com/berkeleyearth/climate-change-earth-surface-temperature-data
+
+# how global warming is affecting the planet
+
+```
+
+```{r include=FALSE, cache=TRUE}
+TemperatureData <- read.csv("dataset/GlobalLandTemperaturesByCountry.csv", header = TRUE, sep="," )
+
+#Data 
+#Fixing Countries for the map so no duplicate country names
+
+
+TemperatureData <- na.omit(TemperatureData) # gets rid of all NA values
+TemperatureData$AverageTemperatureUncertainty <- NULL # drops the uncertainty  column
+TemperatureData$Country[TemperatureData$Country =="United Kingdom (Europe)"] <- "United Kingdom" # Sets UK to all the same value
+#head(TemperatureData)
+TemperatureData$Country[TemperatureData$Country =="Ã.land"] <- "Finland" 
+
+TemperatureData$Country[TemperatureData$Country == "Denmark (Europe)"] <- "Denmark" 
+
+TemperatureData$Country[TemperatureData$Country =="France (Europe)"] <- "France"
+
+TemperatureData$Country[TemperatureData$Country == "Netherlands (Europe)"] <- "Netherlands"
+colnames(TemperatureData)[1] <- "Year" # chaning dt to Year
+
+
+TemperatureData$Timeline <- substr(TemperatureData$Year, 1,4)
+TemperatureData <- TemperatureData %>% filter(as.integer(Timeline) > 1959)
+
+
+nonEULinePlots <- TemperatureData
+
+
+
+
+#Selecting countries
+TemperatureData<- TemperatureData %>% filter(Country == "Austria" | Country == "Belgium"|
+                                   Country == "Bulgaria" | Country == "Croatia"|
+                                   Country == "Cyprus" | Country == "Czech Republic"|
+                                   Country == "Denmark" | Country == "Estonia"|
+                                     Country == "Finland" | Country == "France"|
+                                     Country == "Germany" | Country == "Greece"|
+                                     Country == "Hungary" | Country == "Iceland"|
+                                     Country == "Italy" | Country == "Latvia"|
+                                     Country == "Lithuania" | Country == "Luxembourg"|
+                                     Country == "Malta" | Country == "Netherlands"|
+                                     Country == "Poland" | Country == "Portugal"|
+                                     Country == "Romania" | Country == "Slovakia"|
+                                     Country == "Slovenia" | Country == "Spain"|
+                                     Country == "Sweden" | Country == "Netherlands"|
+                                     Country == "Norway" | Country == "Serbia"|
+                                     Country == "United Kingdom" )
+
+
+
+
+#Need Iceland data possible without year split off
+iceFutData <- TemperatureData
+
+
+
+#Interactive Data uses the Year/Month/Day in one column
+interactiveData <- TemperatureData
+
+animatedData <- TemperatureData
+
+
+#Splitting the Month/Day into their own columns
+TemperatureData$Day <- substr(TemperatureData$Year, 9,10) # grabbing day from the datetime
+
+
+TemperatureData$Month <- substr(TemperatureData$Year,6,7) # grabbing month from the datetime
+TemperatureData$Year <- year(TemperatureData$Year ) # only grabbing the year of the temperature, not months
+#filter only over 1960 has onlyh wish to see the last 60 years
+
+TemperatureData$AverageTemperature <- round(TemperatureData$AverageTemperature, digits = 2) # setting the digits to only 2
+
+#typeof(TemperatureData$Country)
+
+
+
+countryTemp <- TemperatureData
+
+
+
+
+
+
+
+
+
+```
+
+```{r include=FALSE, cache=TRUE}
+#map setup
+
+# was attempting to setup a map but proved more difficult
+# as map would use ggmap (google maps) but need to pay
+# other map libraries use GPS not countries
+
+#worldMap <- map_data(map = "world")
+#worldMap <- filter(worldMap, worldMap$region == euMap)
+#worldMap$region
+
+#https://geocompr.robinlovelace.net/adv-map.html#introduction-5
+
+#regions<- filter(countryTemp, countryTemp$Country == euMap)
+#df <- data.frame(region=c(regions$Country), 
+#value=regions$AverageTemperature, 
+#stringsAsFactors=FALSE)
+#regions$Country
+
+```
+
+
+```{r include=FALSE , cache=TRUE}
+#Animated Bar
+
+
+ani6070 <- animatedData
+ani6070 <- ani6070 %>% filter(as.integer(Timeline) > 1959 & as.integer(Timeline) < 1966  )
+#aniyear <- year(countryTemp$dt)
+aniyear <- as.integer(ani6070$Year)
+#ggani <- ggplot(ani6070,
+   #             aes(x=Country, y= AverageTemperature, colour = ani6070$Country, label = AverageTemperature),title(main="Average Temperatures from 1960 to 1970 within Europe" ))+ 
+  #geom_point()+
+ # labs(x = "Country", y="Average Temperature")   +coord_flip()  + geom_text(nudge_y = 0 ) 
+
+
+#ggani <- ggani + transition_time(aniyear)  +
+ # ease_aes('cubic-in-out') +  labs(title="Year: {frame_time}", fill = "Countries") 
+
+
+gg60<-  ggplot(ani6070, aes(x=Year, y=AverageTemperature, colour= ani6070$Country), main="Average Temperature between 1959- 1966") + geom_point()+
+     labs(x = "Year", y="Average Temperature") + theme(axis.text.x = element_text(angle=90, hjust=2, size = 12))
+
+gg60 <- gg60 + transition_time(aniyear) + ease_aes("cubic-in-out") +
+   labs(colour="Countries")
+
+
+## 70-80
+ani7080 <- animatedData
+
+
+ani7080 <- ani7080 %>% filter(as.integer(Timeline) < 1973 & as.integer(Timeline) > 1966)
+ani7080year <- as.integer(ani7080$Year)
+#ggani7080 <- ggplot(ani7080,
+ #               aes(x=Country, y= AverageTemperature, fill = ani7080$Country, label = AverageTemperature),title(main="Average Temperatures from 1970 to 1980 within Europe" ))+ 
+  #geom_line()+
+  #labs(x = "Country", y="Average Temperature")   +coord_flip()  + geom_text(nudge_y = 0 ) 
+
+
+#ggani7080 <- ggani7080 + transition_time(ani7080year)  +
+ # ease_aes('cubic-in-out') +  labs(title="Year: {frame_time}", fill = "Countries") 
+
+
+
+gg70<-  ggplot(ani7080, aes(x=Year, y=AverageTemperature, colour= ani7080$Country), main="Average Temperature between 1966- 1973") + geom_point()+
+     labs(x = "Year", y="Average Temperature") + theme(axis.text.x = element_text(angle=90, hjust=2, size = 10))
+
+gg70 <- gg70 + transition_time(ani7080year) + ease_aes("cubic-in-out") +
+   labs(colour="Countries")
+
+
+
+
+
+###  80 - 90
+ani9999 <- animatedData
+
+
+ani9999 <- ani9999 %>% filter(as.integer(Timeline) <1999 & as.integer(Timeline) > 1990)
+ani9999year <- as.integer(ani9999$Year)
+#ggani9999 <- ggplot(ani9999,
+  #              aes(x=Country, y= AverageTemperature, fill = ani9999$Country, label = AverageTemperature),title(main="Average Temperatures from 1980 to 1990 within Europe" ))+ 
+ # geom_line()+
+#  labs(x = "Country", y="Average Temperature")   +coord_flip()  + geom_text(nudge_y = 0 ) 
+
+
+#ggani9999 <- ggani9999 + transition_time(ani9999year)  +
+ # ease_aes('cubic-in-out') +  labs(title="Year: {frame_time}", fill = "Countries") 
+
+
+
+gg9999<-  ggplot(ani9999, aes(x=Year, y=AverageTemperature, colour= ani9999$Country), main="Average Temperature between 1990- 1999") + geom_point() +
+     labs(x = "Year", y="Average Temperature") + theme(axis.text.x = element_text(angle=90, hjust=2, size = 10))
+
+gg9999 <- gg9999 + transition_time(ani9999year) + ease_aes("cubic-in-out")
+
+
+
+###  99 - 006
+ani9000 <- animatedData
+
+
+ani9000 <- ani9000 %>% filter(as.integer(Timeline) < 2006 & as.integer(Timeline) > 1999)
+ani9000year <- as.integer(ani9000$Year)
+#ggani90 <- ggplot(ani9000,
+ #               aes(x=Country, y= AverageTemperature, fill = ani9000$Country, label = AverageTemperature),title(main="Average Temperatures from 1990 to 2000s within Europe" ))+ 
+  #geom_line()+
+  #labs(x = "Country", y="Average Temperature")   +coord_flip()  + geom_text(nudge_y = 0 ) 
+
+
+#ggani9000 <- ggani90 + transition_time(ani9000year)  +
+ # ease_aes('cubic-in-out') +  labs(title="Year: {frame_time}", fill = "Countries") 
+
+
+
+
+
+gg9906<-  ggplot(ani9000, aes(x=Year, y=AverageTemperature, colour= ani9000$Country), main="Average Temperature between 1999- 2006") + geom_point()+
+   labs(x = "Year", y="Average Temperature") + theme(axis.text.x = element_text(angle=90, hjust=2, size = 12))
+
+gg9906 <- gg9906 + transition_time(ani9000year) + ease_aes("cubic-in-out") +
+   labs(colour="Countries")
+
+
+## 06--2013
+
+
+ani00now <- animatedData
+ani00now <- ani00now %>% filter(as.integer(Timeline) > 2006)
+#aniyear <- year(countryTemp$dt)
+
+aniyearnow <- as.integer(ani00now$Year)
+#gganinow <- ggplot(ani00now,
+ #               aes(x=Country, y= AverageTemperature, fill = ani00now$Country, label = AverageTemperature),title(main="Average Temperatures from 1990 to 2013 within Europe" ))+ 
+  #geom_line()+
+  #labs(x = "Country", y="Average Temperature")   +coord_flip()  + geom_text(nudge_y = 0 ) 
+
+
+#gganinow <- gganinow + transition_time(aniyearnow)  +
+ # ease_aes('cubic-in-out') +  labs(title="Year: {frame_time}", fill = "Countries")
+
+
+
+
+
+gg2k<-  ggplot(ani00now, aes(x=Year, y=AverageTemperature, colour= ani00now$Country), main="Average Temperature between 2006- 2013") + geom_point()+  
+     labs(x = "Year", y="Average Temperature") + theme(axis.text.x = element_text(angle=90, hjust=2, size = 12))
+
+gg2k <- gg2k + transition_time(aniyearnow) + ease_aes("cubic-in-out") +
+   labs(colour="Countries")
+
+
+
+```
+
+```{r include=FALSE, cache=TRUE}
+## Interactive  data 
+
+
+# Plotly 
+
+x_axis <- list(
+  title = "Date"
+)
+
+y_axis <- list(
+  title = "Average Temperature"
+)
+plotlyInt <- plot_ly(data = interactiveData, x = ~interactiveData$Year, y = ~interactiveData$AverageTemperature, color= ~interactiveData$Country, visible="legendonly", mode="lines",
+                       text = paste(interactiveData$Year))  %>% 
+  layout(xaxis = x_axis, yaxis = y_axis, title="Mainland European Countries Average Temperature")
+
+
+
+#Dygraph Code
+
+countryTemp$Timeline <- NULL
+
+germanyData <- countryTemp
+germanyData <- germanyData %>% filter(Country == "Germany")
+
+
+
+austriaData <- countryTemp
+austriaData <- austriaData %>% filter(Country =="Austria")
+  
+```
+
+```{r include=FALSE , cache=TRUE}
+
+
+# Heat map
+sweData <- TemperatureData %>% filter(Country == "Sweden")
+denData <- TemperatureData %>% filter(Country == "Denmark")
+finData <- TemperatureData %>% filter(Country == "Finland")
+norData <- TemperatureData %>%  filter(Country == "Norway")
+iceData <- TemperatureData %>% filter(Country =="Iceland")
+
+beData <- TemperatureData %>% filter(Country == "Belgium")
+luxData <- TemperatureData %>% filter(Country == "Luxembourg")  
+nedata <- TemperatureData %>% filter(Country =="Netherlands")
+ukdata <-  TemperatureData %>% filter (Country =="United Kingdom")
+
+```
+
+```{r include=FALSE, cache=TRUE}
+#Nordic
+sweplot <- ggplot(sweData, aes(Year, Month)) + 
+  geom_tile (aes(fill=AverageTemperature)) +   labs(title="Sweden Heat Map Temperatures") +
+  scale_fill_gradient2(low = "blue", mid = "green", high = "red") + theme(axis.text.y = element_text(size = 6))
+
+
+denplot <- ggplot(denData, aes(Year, Month)) + 
+  geom_tile (aes(fill=AverageTemperature)) + labs(title="Denmark Heat Map Temperatures") +
+ scale_fill_gradient2(low = "blue", mid = "green", high = "red") + theme(axis.text.y = element_text(size = 6))
+
+
+finplot <- ggplot(finData, aes(Year, Month)) +   labs(title="Finland Heat Map Temperatures") +
+  geom_tile (aes(fill=AverageTemperature)) + scale_fill_gradient2(low = "blue", mid = "green", high = "red") + theme(axis.text.y = element_text(size = 6))
+
+
+
+
+iceplot <- ggplot(iceData, aes(Year, Month)) +   labs(title="Iceland Heat Map Temperatures") +
+  geom_tile (aes(fill=AverageTemperature)) + scale_fill_gradient2(low = "blue", mid = "green", high = "red") + theme(axis.text.y = element_text(size = 6))
+
+
+norplot <- ggplot(norData, aes(Year, Month)) +   labs(title="Norway Heat Map Temperatures") +
+  geom_tile (aes(fill=AverageTemperature)) + scale_fill_gradient2(low = "blue", mid = "green", high = "red") + theme(axis.text.y = element_text(size = 6))
+
+
+
+
+#Be / lux EU
+beplot <- ggplot(beData, aes(Year, Month)) +   labs(title="Belgium Heat Map Temperatures") +
+  geom_raster (aes(fill=AverageTemperature)) + scale_fill_gradient2(low = "blue", mid = "green", high = "red")+ theme(axis.text.y = element_text(size = 6))
+
+
+luxplot <- ggplot(luxData, aes(Year, Month)) +   labs(title="Luxembourg Heat Map Temperatures") +
+  geom_raster (aes(fill=AverageTemperature)) + scale_fill_gradient2(low = "blue", mid = "green", high = "red")+ theme(axis.text.y = element_text(size = 6))
+
+
+neplot <- ggplot(nedata, aes(Year, Month)) +   labs(title="Netherlands Heat Map Temperatures") +
+  geom_raster (aes(fill=AverageTemperature)) + scale_fill_gradient2(low = "blue", mid = "green", high = "red")+ theme(axis.text.y = element_text(size = 6))
+
+  
+
+ukplot <- ggplot(ukdata, aes(Year, Month)) +   labs(title="United Kingdom Heat Map Temperatures") +
+  geom_raster (aes(fill=AverageTemperature)) + scale_fill_gradient2(low = "blue", mid = "green", high = "red")+ theme(axis.text.y = element_text(size = 6))
+
+
+
+```
+
+
+
+Animated Bar Chart 
+==========
+
+**Information about the Animations / Videos**
+
+
+These videos show the increasing temperatures. First is from **1959 to 1966**, second will be from **1966 to 1973**. Third is between **1990 and 1996**. Fourth is from **2000 and 2006**. Final video is from **2006 to 2013** the end of the dataset. 
+
+
+
+Row
+------------------
+
+Video showing temperatures between **1959 to 1966**
+
+```{r  echo = FALSE , cache=TRUE}
+
+# If FFMPEG is installed on PC
+animate(gg60, nframes= 1500, renderer =  ffmpeg_renderer(), width=1920, height= 1080)
+# Takes long time due to duration
+
+# if not
+
+#animate(ggani, nframes=1500, width = 1920, height = 1080 )
+  #anim_save(filename =  "animatedbar.gif", last_animation())
+
+```
+
+
+Video showing temperatures between **1966 to 1973**
+
+```{r echo=FALSE, cache=TRUE}
+
+
+animate(gg70, nframes= 1500, renderer =  ffmpeg_renderer(), width=1920, height= 1080)
+
+# if not
+
+#animate(ggani7080, nframes=1500, width = 1920, height = 1080 )
+
+```
+
+Video showing temperatures between **1996 to 2000**
+
+```{r echo=FALSE, cache=TRUE}
+
+animate(gg9999, nframes= 1500, renderer =  ffmpeg_renderer(), width=1920, height= 1080)
+
+
+```
+
+
+Row
+-----
+
+Video showing temperatures between **2000 to 2006**
+
+
+```{r echo=FALSE, cache=TRUE}
+
+animate(gg9906, nframes=1500, renderer = ffmpeg_renderer(), width = 1920, height=1080)
+```
+
+Video showing temperatures between **2006 to 2013** end of dataset.
+
+```{r  echo = FALSE, cache=TRUE}
+
+
+
+
+# 2000 - 2013
+
+# IF FFMPEG IS INSTALLED 
+ animate(gg2k, nframes=1500, renderer = ffmpeg_renderer(),width = 1920, height = 1080 )
+
+ #animate(gganinow, nframes=1500,width = 1920, height = 1080 )
+
+```
+
+
+
+Interactivity for European Countries 
+====
+
+
+
+
+Row 
+-----------------------------------------------------------------------
+
+This may look messy but the interactivity of Plotly allows the selection of countries to produce a better chart.  Double click on each country name to filter. Single click to remove from the graph. Single Click to show a country. 
+```{r  echo = FALSE}
+
+#Interactive Plotly Time Series
+plotlyInt
+```
+ 
+
+
+Row
+-----------------------------------------------------------------------
+
+Dygraph allows the interactivity to only show the temperature for a range of years. Move the slider to change the years shown. 
+
+
+```{r  echo = FALSE, cache=TRUE}
+
+
+#dygraph(austriaData, main="Average Temperature in Austria")  %>% dyRangeSelector() %>% #dyOptions(stackedGraph = FALSE)
+
+
+
+```
+
+```{r echo=FALSE}
+
+
+
+ukplotly  <- plot_ly(data = ukdata, x=ukdata$Year, y=ukdata$Month, z=ukdata$AverageTemperature, type = "heatmap") %>% layout(title = "UK Heatmap Data", xaxis = list(title = "Years"), yaxis = list(title="Months"))
+
+# did not use this in the end as using too many plotly caused others not to work including dygraphs 
+
+#sweplotly  <- plot_ly(data = sweData, x=sweData$Year, y=sweData$Month, z=sweData$AverageTemperature, type = "heatmap") %>% layout(title = "Sweden Heatmap Data", xaxis = list(title = "Years"), yaxis = list(title="Months"))
+
+
+```
+
+
+Heatmap Data
+====
+
+These heatmap type plots show the temperatures of different countries. 
+
+
+Row
+-----------------------------------------------------------------------
+
+
+Plots for Sweden and Finland areas.
+```{r echo = FALSE, cache=TRUE}
+grid.arrange(sweplot, finplot, nrow=2)
+
+```
+
+
+ 
+ 
+Plots for Denmark and Norway
+```{r echo = FALSE, cache=TRUE}
+grid.arrange(denplot , norplot, nrow=2)
+
+```
+
+Row  
+----------
+
+Interactive Plot for UK
+```{r echo = FALSE, cache=TRUE}
+ukplotly
+```
+
+Plots for Belgium and Luxembourgh
+```{r echo = FALSE, cache=TRUE}
+ grid.arrange(beplot,  luxplot, nrow =2)
+
+
+```
+
+
+Row 
+------------------------------
+Plots for Netherlands and Iceland
+```{r echo = FALSE,cache=TRUE}
+
+grid.arrange(neplot, iceplot, nrow=2)
+
+
+
+```
+
+
+African Bar Plots 
+================
+
+
+Row
+------------------------------------------------------------
+```{r  echo=FALSE ,cache=TRUE}
+# Zim / South Africa
+
+
+nonEULinePlots$Day <- substr(nonEULinePlots$Year, 9,10) # grabbing day from the datetime
+
+
+nonEULinePlots$Month <- substr(nonEULinePlots$Year,6,7) # grabbing month from the datetime
+nonEULinePlots$Year <- year(nonEULinePlots$Year ) # only grabbing the year of the temperature, not months
+
+nonEULinePlots <- nonEULinePlots %>% filter(as.integer(Timeline) > 1979)
+
+africaplots <- nonEULinePlots %>% filter(Country == "South Africa" | Country =="Zimbabwe")
+africaplots <- africaplots %>% filter(as.integer(Timeline) > 1999)
+
+
+zimza <- ggplot(africaplots, aes(y= AverageTemperature, x=Year, fill = Country,)) +
+  theme_bw() +
+  geom_col(position = "dodge") +
+  facet_wrap( ~Country) +
+  scale_y_continuous(breaks = seq(0,30, by = 2.5)) +
+  scale_x_continuous(breaks = seq(2000,2013, by = 2))+
+  geom_hline(yintercept = 25)
+
+
+
+
+zimza13  <- africaplots %>% filter(as.integer(Timeline) > 2011) 
+
+
+zimza13plot <- ggplot(zimza13, aes(y= AverageTemperature, x=Month, fill = Country)) +
+  theme_bw() +
+  geom_col(position = "dodge") +
+  facet_wrap(Year ~Country ) +
+  scale_y_continuous(breaks = seq(0,30, by = 5)) +
+  geom_hline(yintercept = 10)
+
+
+
+```
+
+In these plots we can see that the temperatures in the south hemisphere are also rising. 
+
+The first two of South Africa and Zimbabwe.
+
+We can see by the line intercepting at average temperature of 25. Throughout the years Zimbabwe saw an increase of temperature which may be due to the global warming issue or to do with a heat wave. 
+
+While South Africa as a whole did not reach through the year to get average above 25 degrees.
+
+Some months may have reached these temperatures although.  
+
+
+```{r echo=FALSE, cache=TRUE, fig.width=10}
+zimza
+```
+
+Row
+--------------------
+
+In this next plot, it is showing the years of 2012 and 2013. As the dataset ends of August 2013 this is where those plots also end. It is showing that in the summer months of these countries 2013 definitely had higher temperatures. 
+
+The average temperature line incepting at 10 degrees, showing this line incepting at 10  degrees shows that 2013 even in the winter months of  July August had higher temperatures. 
+
+
+```{r echo=FALSE, cache=TRUE, fig.width=12}
+zimza13plot
+```
+
+
