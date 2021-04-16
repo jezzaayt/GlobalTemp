@@ -7,6 +7,3 @@ Kaggle Dataset (https://www.kaggle.com/berkeleyearth/climate-change-earth-surfac
 I used R Markdown for this and flex dashboard. 
 
 All work has been part of study.  
-
-# License
-MIT License. 
